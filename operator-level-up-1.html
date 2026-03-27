@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPERATOR // LEVEL UP</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@400;600;700&family=Bebas+Neue&display=swap');
+
+:root {
+  --bg: #0a0b08;
+  --surface: #111410;
+  --surface2: #181c14;
+  --border: #3a4030;
+  --accent: #8fbc3f;
+  --accent2: #c8a84b;
+  --red: #c0392b;
+  --red2: #8b2820;
+  --text: #c8c9b8;
+  --text-dim: #6b7060;
+  --text-bright: #e8e9d8;
+  --scan: rgba(143,188,63,0.03);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Scanlines overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    var(--scan) 2px,
+    var(--scan) 4px
+  );
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Noise texture */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.4;
+}
+
+/* ═══ DATETIME BAR ═══ */
+.datetime-bar {
+  background: #0a0c08;
+  border-bottom: 1px solid #1e2418;
+  padding: 5px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dt-date {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--accent2);
+}
+
+.dt-time {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--accent);
+}
+
+.dt-day {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* ═══ HEADER ═══ */
+.header {
+  background: linear-gradient(180deg, #0d1009 0%, var(--surface) 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.callsign-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.callsign {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.xp-badge {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 13px;
+  color: var(--accent2);
+  letter-spacing: 2px;
+  background: rgba(200,168,75,0.1);
+  border: 1px solid rgba(200,168,75,0.3);
+  padding: 2px 10px;
+}
+
+/* 8-bit character */
+.character-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0 4px;
+}
+
+.pixel-char {
+  image-rendering: pixelated;
+  width: 64px;
+  height: 64px;
+  position: relative;
+}
+
+.pixel-char canvas {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+}
+
+.level-display {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  color: var(--text-bright);
+  letter-spacing: 4px;
+  line-height: 1;
+}
+
+.level-display span {
+  color: var(--accent);
+  font-size: 14px;
+  vertical-align: middle;
+  letter-spacing: 3px;
+}
+
+.xp-bar-wrap {
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+.xp-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 3px;
+}
+
+.xp-bar-outer {
+  height: 6px;
+  background: #1a1f14;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: visible;
+}
+
+.xp-bar-inner {
+  height: 100%;
+  background: linear-gradient(90deg, #4a7a1e, var(--accent));
+  transition: width 0.6s cubic-bezier(0.23,1,0.32,1);
+  position: relative;
+}
+
+.xp-bar-inner::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -2px;
+  width: 3px;
+  height: 10px;
+  background: #fff;
+  opacity: 0.8;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+/* corner decorations */
+.corner-tl, .corner-br {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+}
+.corner-tl {
+  top: -1px; left: -1px;
+  border-top: 2px solid var(--accent2);
+  border-left: 2px solid var(--accent2);
+}
+.corner-br {
+  bottom: -1px; right: -1px;
+  border-bottom: 2px solid var(--accent2);
+  border-right: 2px solid var(--accent2);
+}
+
+/* ═══ TABS ═══ */
+.tabs {
+  display: flex;
+  gap: 1px;
+  background: #0d0f0a;
+  border-top: 1px solid #222;
+  margin-top: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  flex: 1;
+  min-width: 58px;
+  padding: 8px 4px;
+  background: var(--surface);
+  border: none;
+  color: var(--text-dim);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: var(--surface2);
+}
+
+.tab-btn.missed-tab {
+  color: #7a3030;
+}
+.tab-btn.missed-tab.active {
+  color: var(--red);
+  border-bottom-color: var(--red);
+}
+
+/* ═══ CONTENT ═══ */
+.content {
+  padding: 16px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* section header */
+.section-header {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 4px;
+  color: var(--accent2);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-header::before {
+  content: '//';
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+/* task card */
+.task-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+
+.task-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--border);
+  transition: background 0.2s;
+}
+
+.task-card:hover {
+  background: var(--surface2);
+  border-color: #4a5040;
+}
+
+.task-card.checked {
+  background: rgba(143,188,63,0.06);
+  border-color: rgba(143,188,63,0.3);
+}
+
+.task-card.checked::before {
+  background: var(--accent);
+}
+
+.task-card.missed-card.checked {
+  background: rgba(192,57,43,0.08);
+  border-color: rgba(192,57,43,0.35);
+}
+
+.task-card.missed-card.checked::before {
+  background: var(--red);
+}
+
+/* checkbox */
+.checkbox {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  background: #0d0f0a;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.task-card.checked .checkbox {
+  border-color: var(--accent);
+  background: rgba(143,188,63,0.15);
+}
+
+.task-card.missed-card.checked .checkbox {
+  border-color: var(--red);
+  background: rgba(192,57,43,0.15);
+}
+
+.checkbox::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.task-card.checked .checkbox::after { opacity: 1; }
+
+.task-card.missed-card .checkbox::after {
+  background: var(--red);
+  clip-path: polygon(20% 0%, 0% 20%, 30% 50%, 0% 80%, 20% 100%, 50% 70%, 80% 100%, 100% 80%, 70% 50%, 100% 20%, 80% 0%, 50% 30%);
+}
+
+.task-label {
+  flex: 1;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--text);
+  text-transform: uppercase;
+  transition: color 0.15s;
+}
+
+.task-card.checked .task-label {
+  color: var(--accent);
+}
+
+.task-card.missed-card.checked .task-label {
+  color: var(--red);
+}
+
+.task-xp {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  transition: color 0.15s;
+}
+
+.task-card.checked .task-xp {
+  color: var(--accent);
+}
+
+.task-card.missed-card.checked .task-xp {
+  color: var(--red);
+}
+
+/* water tracker */
+.water-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 14px;
+  margin-bottom: 8px;
+}
+
+.water-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.water-label .water-total {
+  color: #4a9aba;
+  font-size: 14px;
+}
+
+.water-bubbles {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.water-unit {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #2a3a4a;
+  background: #0d1218;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 8px;
+  color: #2a5a7a;
+  letter-spacing: 0;
+  transition: all 0.15s;
+  font-family: 'Bebas Neue', sans-serif;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.water-unit.filled {
+  background: rgba(74,154,186,0.15);
+  border-color: #4a9aba;
+  color: #4a9aba;
+}
+
+.water-unit span { font-size: 16px; }
+
+.water-btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.water-btn {
+  flex: 1;
+  padding: 8px;
+  background: none;
+  border: 1px solid #2a3a4a;
+  color: #4a9aba;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 12px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.water-btn:hover {
+  background: rgba(74,154,186,0.1);
+  border-color: #4a9aba;
+}
+
+.water-btn.remove {
+  color: var(--text-dim);
+  border-color: var(--border);
+}
+
+/* XP popup animation */
+.xp-popup {
+  position: fixed;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 3px;
+  pointer-events: none;
+  z-index: 9999;
+  animation: xpFloat 1.2s ease-out forwards;
+}
+
+@keyframes xpFloat {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  80%  { opacity: 0.8; transform: translateY(-60px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-80px) scale(0.9); }
+}
+
+/* level up banner */
+.levelup-banner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  background: #0d0f0a;
+  border: 2px solid var(--accent);
+  padding: 20px 36px;
+  text-align: center;
+  z-index: 9998;
+  animation: bannerIn 0.4s cubic-bezier(0.23,1,0.32,1) forwards;
+  display: none;
+}
+
+.levelup-banner.show {
+  display: block;
+}
+
+@keyframes bannerIn {
+  to { transform: translate(-50%, -50%) scale(1); }
+}
+
+.levelup-banner h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  color: var(--accent);
+  letter-spacing: 6px;
+}
+
+.levelup-banner p {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 3px;
+  margin-top: 4px;
+}
+
+/* daily reset */
+.reset-bar {
+  text-align: center;
+  padding: 20px 0 40px;
+  color: var(--text-dim);
+  font-size: 9px;
+  letter-spacing: 3px;
+}
+
+.reset-btn {
+  margin-top: 8px;
+  padding: 8px 20px;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reset-btn:hover {
+  border-color: var(--accent2);
+  color: var(--accent2);
+}
+
+/* strikethrough for checked */
+.task-card.checked .task-label {
+  text-decoration: line-through;
+  text-decoration-color: rgba(143,188,63,0.4);
+}
+
+/* ═══ TACTICAL DECORATIONS ═══ */
+.tac-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  margin: 14px 0;
+}
+
+.objective-tag {
+  font-size: 8px;
+  color: var(--text-dim);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+/* missed section warning */
+.missed-warning {
+  background: rgba(192,57,43,0.06);
+  border: 1px solid rgba(192,57,43,0.2);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 9px;
+  color: #8b4040;
+  letter-spacing: 2px;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ DATETIME BAR ═══ -->
+<div class="datetime-bar">
+  <div class="dt-date" id="dtDate">--</div>
+  <div class="dt-day" id="dtDay">---</div>
+  <div class="dt-time" id="dtTime">--:--:--</div>
+</div>
+
+<!-- ═══ HEADER ═══ -->
+<div class="header">
+  <div class="callsign-bar">
+    <div class="callsign">▌OPERATOR // DAILY OPS</div>
+    <div class="xp-badge" id="xpBadge">0 XP</div>
+  </div>
+
+  <div class="character-wrap">
+    <div class="pixel-char">
+      <canvas id="charCanvas" width="16" height="16"></canvas>
+    </div>
+    <div class="level-display"><span>LVL </span><span id="levelNum">1</span></div>
+    <div class="xp-bar-wrap">
+      <div class="xp-bar-labels">
+        <span id="xpCurrent">0 XP</span>
+        <span>1000 XP / LEVEL</span>
+      </div>
+      <div class="xp-bar-outer">
+        <div class="corner-tl"></div>
+        <div class="corner-br"></div>
+        <div class="xp-bar-inner" id="xpBar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('food',this)">FOOD</button>
+    <button class="tab-btn" onclick="switchTab('sleep',this)">SLEEP</button>
+    <button class="tab-btn" onclick="switchTab('learning',this)">LEARN</button>
+    <button class="tab-btn" onclick="switchTab('workout',this)">WORKOUT</button>
+    <button class="tab-btn missed-tab" onclick="switchTab('missed',this)">MISSED</button>
+  </div>
+</div>
+
+<!-- ═══ CONTENT ═══ -->
+<div class="content">
+
+  <!-- FOOD -->
+  <div class="tab-panel active" id="tab-food">
+    <div class="section-header">NUTRITION OPS</div>
+    <div class="objective-tag">OBJECTIVE — FUEL THE OPERATOR</div>
+
+    <div class="task-card" id="task-protein" onclick="toggleTask('protein',15,this)">
+      <div class="checkbox"></div>
+      <div class="task-label">Hit my protein</div>
+      <div class="task-xp">+15 XP</div>
+    </div>
+
+    <div class="task-card" id="task-calories" onclick="toggleTask('calories',15,this)">
+      <div class="checkbox"></div>
+      <div class="task-label">Stay in calories</div>
+      <div class="task-xp">+15 XP</div>
+    </div>
+
+    <div class="tac-line"></div>
+    <div class="objective-tag">HYDRATION STATUS</div>
+
+    <!-- Water tracker -->
+    <div class="water-card">
+      <div class="water-label">
+        <span>// WATER INTAKE</span>
+        <span class="water-total" id="waterTotal">0.0 L — 0 XP</span>
+      </div>
+      <div class="water-bubbles" id="waterBubbles"></div>
+      <div class="water-btn-row">
+        <button class="water-btn" onclick="addWater()">+ 0.5 L</button>
+        <button class="water-btn remove" onclick="removeWater()">— REMOVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLEEP -->
+  <div class="tab-panel" id="tab-sleep">
+    <div class="section-header">SLEEP DEBRIEF</div>
+    <div class="objective-tag">OBJECTIVE — RECOVER & RECHARGE</div>
+
+    <div class="task-card" id="task-sleepanalysis" onclick="toggleTask('sleepanalysis',15,this)">
+      <div class="checkbox"></div>
+      <div class="task-label">Analysed my sleep</div>
+      <div class="task-xp">+15 XP</div>
+    </div>
+
+    <div class="task-card" id="task-7hours" onclick="toggleTask('7hours',15,this)">
+      <div class="checkbox"></div>
+      <div class="task-label">7 hours +</div>
+      <div class="task-xp">+15 XP</div>
+    </div>
+  </div>
+
+  <!-- LEARNING -->
+  <div class="tab-panel" id="tab-learning">
+    <div class="section-header">INTEL & TRAINING</div>
+    <div class="objective-tag">OBJECTIVE — EXPAND CAPABILITIES</div>
+
+    <div class="task-card" id="task-chinese" onclick="toggleTask('chinese',15,this)">
+      <div class="checkbox"></div>
+      <div class="task-label">Hello Chinese</div>
+      <div class="task-xp">+15 XP</div>
+    </div>
+  </div>
+
+  <!-- WORKOUT -->
+  <div class="tab-panel" id="tab-workout">
+    <div class="section-header">PHYSICAL CONDITIONING</div>
+    <div class="objective-tag">OBJECTIVE — FORTIFY THE BODY</div>
+
+    <div class="task-card" id="task-gym" onclick="toggleTask('gym',15,this)">
+      <div class="checkbox"></div>
+      <div class="task-label">Gym</div>
+      <div class="task-xp">+15 XP</div>
+    </div>
+
+    <div class="task-card" id="task-running" onclick="toggleTask('running',15,this)">
+      <div class="checkbox"></div>
+      <div class="task-label">Running</div>
+      <div class="task-xp">+15 XP</div>
+    </div>
+  </div>
+
+  <!-- MISSED -->
+  <div class="tab-panel" id="tab-missed">
+    <div class="section-header" style="color:var(--red)">AFTER ACTION — FAILURES</div>
+    <div class="missed-warning">⚠ EACH CHECKED ITEM DEDUCTS 15 XP FROM YOUR SCORE</div>
+    <div class="objective-tag">MARK WHAT YOU FAILED TODAY</div>
+
+    <div class="task-card missed-card" id="task-m-sleep" onclick="toggleTask('m-sleep',-15,this,true)">
+      <div class="checkbox"></div>
+      <div class="task-label">Below 7 hours sleep</div>
+      <div class="task-xp" style="color:var(--text-dim)">−15 XP</div>
+    </div>
+
+    <div class="task-card missed-card" id="task-m-overate" onclick="toggleTask('m-overate',-15,this,true)">
+      <div class="checkbox"></div>
+      <div class="task-label">Over ate</div>
+      <div class="task-xp" style="color:var(--text-dim)">−15 XP</div>
+    </div>
+
+    <div class="task-card missed-card" id="task-m-protein" onclick="toggleTask('m-protein',-15,this,true)">
+      <div class="checkbox"></div>
+      <div class="task-label">Protein not hit</div>
+      <div class="task-xp" style="color:var(--text-dim)">−15 XP</div>
+    </div>
+
+    <div class="task-card missed-card" id="task-m-workout" onclick="toggleTask('m-workout',-15,this,true)">
+      <div class="checkbox"></div>
+      <div class="task-label">No workout done</div>
+      <div class="task-xp" style="color:var(--text-dim)">−15 XP</div>
+    </div>
+  </div>
+
+  <!-- Reset -->
+  <div class="reset-bar">
+    <div>// DAILY OPS RESET AT 00:00 //</div>
+    <button class="reset-btn" onclick="resetDaily()">[ RESET DAILY TASKS ]</button>
+  </div>
+</div>
+
+<!-- Level-up banner -->
+<div class="levelup-banner" id="levelupBanner">
+  <h2>LEVEL UP</h2>
+  <p id="levelupText">RANK ACHIEVED // LVL 2</p>
+</div>
+
+<script>
+// ══════════════════════════════════
+//  STATE
+// ══════════════════════════════════
+const STORAGE_KEY = 'operator_save';
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+}
+
+function defaultState() {
+  return {
+    totalXP: 0,
+    tasks: {},
+    waterUnits: 0,
+    lastDay: todayStr(),
+  };
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      // Auto-reset daily tasks if it's a new day
+      if (s.lastDay !== todayStr()) {
+        s.tasks = {};
+        s.waterUnits = 0;
+        s.lastDay = todayStr();
+      }
+      return s;
+    }
+  } catch(e) {}
+  return defaultState();
+}
+
+function save(s) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch(e) {}
+}
+
+let state = load();
+
+// ══════════════════════════════════
+//  CLOCK
+// ══════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  const days = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+
+  document.getElementById('dtTime').textContent = h + ':' + m + ':' + s;
+  document.getElementById('dtDate').textContent = now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+  document.getElementById('dtDay').textContent = days[now.getDay()];
+
+  // Check if day changed while app is open
+  if (state.lastDay !== todayStr()) {
+    state.tasks = {};
+    state.waterUnits = 0;
+    state.lastDay = todayStr();
+    save(state);
+    document.querySelectorAll('.task-card').forEach(c => c.classList.remove('checked'));
+    updateUI();
+  }
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+
+// ══════════════════════════════════
+//  XP LOGIC
+// ══════════════════════════════════
+function getLevel(xp) {
+  const eff = Math.max(0, xp);
+  return Math.floor(eff / 1000) + 1;
+}
+
+function getXPInLevel(xp) {
+  const eff = Math.max(0, xp);
+  return eff % 1000;
+}
+
+function updateUI() {
+  const xp = state.totalXP;
+  const level = getLevel(xp);
+  const inLevel = getXPInLevel(xp);
+  const pct = (inLevel / 1000) * 100;
+
+  document.getElementById('xpBadge').textContent = xp + ' XP';
+  document.getElementById('levelNum').textContent = level;
+  document.getElementById('xpCurrent').textContent = inLevel + ' / 1000';
+  document.getElementById('xpBar').style.width = pct + '%';
+
+  drawCharacter(level);
+  updateWaterUI();
+}
+
+// ══════════════════════════════════
+//  TASK TOGGLE
+// ══════════════════════════════════
+function toggleTask(id, xpAmount, el, isMissed) {
+  const wasChecked = state.tasks[id] || false;
+  const checked = !wasChecked;
+  state.tasks[id] = checked;
+
+  const prevLevel = getLevel(state.totalXP);
+
+  if (checked) {
+    state.totalXP += xpAmount;
+    el.classList.add('checked');
+    showXPPopup(el, xpAmount);
+  } else {
+    state.totalXP -= xpAmount;
+    el.classList.remove('checked');
+  }
+
+  state.totalXP = Math.max(0, state.totalXP);
+
+  const newLevel = getLevel(state.totalXP);
+  if (newLevel > prevLevel && checked) {
+    showLevelUp(newLevel);
+  }
+
+  save(state);
+  updateUI();
+}
+
+function showXPPopup(el, amount) {
+  const rect = el.getBoundingClientRect();
+  const popup = document.createElement('div');
+  popup.className = 'xp-popup';
+  popup.textContent = (amount > 0 ? '+' : '') + amount + ' XP';
+  popup.style.color = amount > 0 ? '#8fbc3f' : '#c0392b';
+  popup.style.left = (rect.left + rect.width / 2 - 30) + 'px';
+  popup.style.top = (rect.top + window.scrollY) + 'px';
+  document.body.appendChild(popup);
+  setTimeout(() => popup.remove(), 1300);
+}
+
+function showLevelUp(level) {
+  const banner = document.getElementById('levelupBanner');
+  document.getElementById('levelupText').textContent = 'RANK ACHIEVED // LVL ' + level;
+  banner.classList.add('show');
+  setTimeout(() => banner.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════
+//  WATER
+// ══════════════════════════════════
+function addWater() {
+  const prevXP = waterXP();
+  state.waterUnits++;
+  const newXP = waterXP();
+  state.totalXP += (newXP - prevXP);
+  save(state);
+  updateUI();
+
+  // show popup
+  const btn = document.querySelector('.water-btn');
+  showXPPopup(btn, 5);
+}
+
+function removeWater() {
+  if (state.waterUnits <= 0) return;
+  const prevXP = waterXP();
+  state.waterUnits--;
+  const newXP = waterXP();
+  state.totalXP += (newXP - prevXP);
+  state.totalXP = Math.max(0, state.totalXP);
+  save(state);
+  updateUI();
+}
+
+function waterXP() {
+  return state.waterUnits * 5;
+}
+
+function updateWaterUI() {
+  const units = state.waterUnits;
+  const liters = (units * 0.5).toFixed(1);
+  const xp = waterXP();
+
+  document.getElementById('waterTotal').textContent = liters + ' L — ' + xp + ' XP';
+
+  const wrap = document.getElementById('waterBubbles');
+  wrap.innerHTML = '';
+  const display = Math.max(8, units + 2);
+  for (let i = 0; i < display; i++) {
+    const d = document.createElement('div');
+    d.className = 'water-unit' + (i < units ? ' filled' : '');
+    d.innerHTML = '<span>💧</span><div>' + ((i+1)*0.5).toFixed(1) + 'L</div>';
+    d.onclick = () => {
+      if (i < units) {
+        // remove down to this unit
+        const prevXP = waterXP();
+        state.waterUnits = i;
+        const newXP = waterXP();
+        state.totalXP += (newXP - prevXP);
+        state.totalXP = Math.max(0, state.totalXP);
+        save(state);
+        updateUI();
+      }
+    };
+    wrap.appendChild(d);
+  }
+}
+
+// ══════════════════════════════════
+//  TABS
+// ══════════════════════════════════
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ══════════════════════════════════
+//  RESET DAILY
+// ══════════════════════════════════
+function resetDaily() {
+  if (!confirm('CONFIRM DAILY RESET? XP IS KEPT, TASKS RESET.')) return;
+  state.tasks = {};
+  state.waterUnits = 0;
+  // recalc XP: keep only permanent XP (we reset tasks so we don't touch totalXP on reset—tasks were already baked in)
+  // For simplicity: keep XP as is, just uncheck visually. XP earned stays.
+  document.querySelectorAll('.task-card').forEach(c => c.classList.remove('checked'));
+  save(state);
+  updateUI();
+}
+
+// ══════════════════════════════════
+//  8-BIT CHARACTER
+// ══════════════════════════════════
+function drawCharacter(level) {
+  const canvas = document.getElementById('charCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 16, 16);
+
+  // Color tiers based on level
+  const tier = Math.floor((level - 1) / 5);
+  const colors = [
+    { skin: '#8b6914', gear: '#4a5a2a', hat: '#3a4a20', accent: '#8fbc3f' },
+    { skin: '#8b6914', gear: '#2a3a6a', hat: '#1a2a5a', accent: '#4a8aff' },
+    { skin: '#8b6914', gear: '#6a2a2a', hat: '#4a1a1a', accent: '#ff4a4a' },
+    { skin: '#8b6914', gear: '#6a5a2a', hat: '#4a3a10', accent: '#ffd700' },
+    { skin: '#8b6914', gear: '#3a1a6a', hat: '#2a0a4a', accent: '#cc44ff' },
+  ];
+  const c = colors[Math.min(tier, colors.length - 1)];
+
+  const p = (x, y, color) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, 1, 1);
+  };
+
+  // Hat / beret
+  for (let x = 4; x <= 11; x++) p(x, 1, c.hat);
+  for (let x = 3; x <= 12; x++) p(x, 2, c.hat);
+  for (let x = 3; x <= 12; x++) p(x, 3, c.hat);
+
+  // Hat band
+  for (let x = 3; x <= 12; x++) p(x, 4, c.accent);
+
+  // Face
+  for (let x = 4; x <= 11; x++) p(x, 5, c.skin);
+  for (let x = 3; x <= 12; x++) p(x, 6, c.skin);
+  for (let x = 3; x <= 12; x++) p(x, 7, c.skin);
+
+  // Eyes
+  p(5, 6, '#111'); p(10, 6, '#111');
+
+  // Beard
+  for (let x = 4; x <= 11; x++) p(x, 8, '#3a2a1a');
+  p(5, 8, c.skin); p(10, 8, c.skin);
+
+  // Body / gear
+  for (let x = 3; x <= 12; x++) p(x, 9, c.gear);
+  for (let x = 2; x <= 13; x++) p(x, 10, c.gear);
+  for (let x = 2; x <= 13; x++) p(x, 11, c.gear);
+
+  // Arms
+  p(1, 10, c.gear); p(1, 11, c.gear); p(1, 12, c.gear);
+  p(14, 10, c.gear); p(14, 11, c.gear); p(14, 12, c.gear);
+
+  // Tactical vest detail
+  p(7, 10, c.accent); p(8, 10, c.accent);
+
+  // Legs
+  for (let x = 4; x <= 7; x++) p(x, 12, c.gear);
+  for (let x = 8; x <= 11; x++) p(x, 12, c.gear);
+  for (let x = 4; x <= 7; x++) p(x, 13, '#2a3020');
+  for (let x = 8; x <= 11; x++) p(x, 13, '#2a3020');
+  for (let x = 4; x <= 7; x++) p(x, 14, '#1a2010');
+  for (let x = 8; x <= 11; x++) p(x, 14, '#1a2010');
+
+  // Boots
+  for (let x = 3; x <= 7; x++) p(x, 15, '#1a1a10');
+  for (let x = 8; x <= 12; x++) p(x, 15, '#1a1a10');
+
+  // Level indicator glow
+  if (level >= 5) {
+    // add shoulder badge
+    p(2, 9, c.accent); p(13, 9, c.accent);
+  }
+  if (level >= 10) {
+    p(2, 8, c.accent); p(13, 8, c.accent);
+    p(2, 10, c.accent); p(13, 10, c.accent);
+  }
+}
+
+// ══════════════════════════════════
+//  RESTORE CHECKED STATE
+// ══════════════════════════════════
+function restoreTaskStates() {
+  Object.entries(state.tasks).forEach(([id, checked]) => {
+    if (checked) {
+      const el = document.getElementById('task-' + id);
+      if (el) el.classList.add('checked');
+    }
+  });
+}
+
+// ══════════════════════════════════
+//  INIT
+// ══════════════════════════════════
+restoreTaskStates();
+updateUI();
+</script>
+</body>
+</html>
