@@ -1133,5 +1133,14 @@ function restoreTaskStates() {
 restoreTaskStates();
 updateUI();
 </script>
+  
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/Self-level/sw.js");
+  });
+}
+</script>
+  
 </body>
 </html>
