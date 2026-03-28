@@ -1,8 +1,8 @@
 {
   "name": "Self Level",
   "short_name": "SelfLevel",
-  "start_url": "/Self-level/",
-  "scope": "/Self-level/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0a0c08",
   "theme_color": "#0a0c08",
